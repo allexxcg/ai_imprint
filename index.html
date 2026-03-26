@@ -1,0 +1,893 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI 拓思 — 用 AI 拓印你心裡的想法</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;400;600;900&family=Noto+Sans+TC:wght@300;400;500&family=DM+Serif+Display:ital@0;1&family=Space+Mono&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #1a1208;
+    --paper: #f5f0e8;
+    --warm: #e8dfc8;
+    --accent: #c4692a;
+    --accent-light: #e8936a;
+    --muted: #7a6e60;
+    --rule: #d0c8b8;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: 'Noto Sans TC', sans-serif;
+    font-weight: 300;
+    line-height: 1.8;
+    overflow-x: hidden;
+  }
+
+  /* ── Noise texture overlay ── */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* ── Typography ── */
+  .serif { font-family: 'Noto Serif TC', serif; }
+  .dm { font-family: 'DM Serif Display', serif; }
+  .mono { font-family: 'Space Mono', monospace; }
+
+  /* ── NAV ── */
+  nav {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 48px;
+    background: rgba(245,240,232,0.85);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--rule);
+  }
+
+  .nav-logo {
+    font-family: 'Noto Serif TC', serif;
+    font-weight: 900;
+    font-size: 18px;
+    letter-spacing: 0.08em;
+    color: var(--ink);
+    text-decoration: none;
+  }
+
+  .nav-logo span {
+    color: var(--accent);
+  }
+
+  .nav-cta {
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    padding: 10px 24px;
+    font-family: 'Noto Sans TC', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    letter-spacing: 0.06em;
+    cursor: pointer;
+    transition: background 0.2s;
+    text-decoration: none;
+  }
+  .nav-cta:hover { background: #a3541e; }
+
+  /* ── HERO ── */
+  .hero {
+    min-height: 100vh;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    align-items: center;
+    gap: 0;
+    padding-top: 80px;
+    position: relative;
+  }
+
+  .hero-left {
+    padding: 80px 64px 80px 80px;
+    position: relative;
+  }
+
+  .hero-eyebrow {
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.2em;
+    color: var(--accent);
+    text-transform: uppercase;
+    margin-bottom: 32px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .hero-eyebrow::before {
+    content: '';
+    display: block;
+    width: 32px;
+    height: 1px;
+    background: var(--accent);
+  }
+
+  .hero-title {
+    font-family: 'Noto Serif TC', serif;
+    font-weight: 900;
+    font-size: clamp(48px, 5vw, 72px);
+    line-height: 1.15;
+    letter-spacing: -0.02em;
+    color: var(--ink);
+    margin-bottom: 12px;
+  }
+
+  .hero-title-en {
+    font-family: 'DM Serif Display', serif;
+    font-style: italic;
+    font-size: clamp(20px, 2.2vw, 28px);
+    color: var(--muted);
+    font-weight: 400;
+    margin-bottom: 40px;
+    letter-spacing: 0.01em;
+  }
+
+  .hero-desc {
+    font-size: 16px;
+    line-height: 1.9;
+    color: #4a4236;
+    max-width: 440px;
+    margin-bottom: 48px;
+  }
+
+  .hero-desc strong {
+    color: var(--ink);
+    font-weight: 500;
+  }
+
+  .hero-actions {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    flex-wrap: wrap;
+  }
+
+  .btn-primary {
+    background: var(--ink);
+    color: var(--paper);
+    border: none;
+    padding: 16px 36px;
+    font-family: 'Noto Sans TC', sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    letter-spacing: 0.05em;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-decoration: none;
+    display: inline-block;
+  }
+  .btn-primary:hover {
+    background: var(--accent);
+  }
+
+  .btn-ghost {
+    color: var(--muted);
+    font-size: 13px;
+    font-weight: 400;
+    text-decoration: underline;
+    cursor: pointer;
+    transition: color 0.2s;
+    border: none;
+    background: none;
+    font-family: 'Noto Sans TC', sans-serif;
+  }
+  .btn-ghost:hover { color: var(--ink); }
+
+  /* Hero Right — decorative block */
+  .hero-right {
+    position: relative;
+    height: 100vh;
+    background: var(--warm);
+    border-left: 1px solid var(--rule);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 80px 64px;
+  }
+
+  .hero-card {
+    background: var(--paper);
+    border: 1px solid var(--rule);
+    padding: 40px;
+    position: relative;
+    box-shadow: 6px 6px 0 var(--rule);
+    animation: float 6s ease-in-out infinite;
+  }
+
+  @keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-8px); }
+  }
+
+  .card-label {
+    font-family: 'Space Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.18em;
+    color: var(--accent);
+    text-transform: uppercase;
+    margin-bottom: 20px;
+  }
+
+  .card-input {
+    font-family: 'Noto Serif TC', serif;
+    font-size: 14px;
+    line-height: 1.8;
+    color: var(--muted);
+    border-left: 2px solid var(--rule);
+    padding-left: 16px;
+    margin-bottom: 28px;
+    font-weight: 300;
+  }
+
+  .card-arrow {
+    text-align: center;
+    color: var(--accent);
+    font-size: 20px;
+    margin-bottom: 28px;
+    opacity: 0.6;
+  }
+
+  .card-output {
+    font-family: 'Noto Serif TC', serif;
+    font-size: 14px;
+    line-height: 1.8;
+    color: var(--ink);
+    font-weight: 400;
+  }
+
+  .hero-deco-text {
+    position: absolute;
+    bottom: 48px;
+    right: 48px;
+    font-family: 'DM Serif Display', serif;
+    font-size: 120px;
+    font-style: italic;
+    color: var(--rule);
+    line-height: 1;
+    pointer-events: none;
+    user-select: none;
+  }
+
+  /* ── PROBLEM ── */
+  .section {
+    padding: 120px 80px;
+    position: relative;
+  }
+
+  .section-inner {
+    max-width: 1100px;
+    margin: 0 auto;
+  }
+
+  .section-label {
+    font-family: 'Space Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.22em;
+    color: var(--accent);
+    text-transform: uppercase;
+    margin-bottom: 48px;
+  }
+
+  .section-title {
+    font-family: 'Noto Serif TC', serif;
+    font-weight: 900;
+    font-size: clamp(32px, 3.5vw, 52px);
+    line-height: 1.25;
+    margin-bottom: 24px;
+  }
+
+  .section-subtitle {
+    font-size: 16px;
+    color: var(--muted);
+    max-width: 600px;
+    margin-bottom: 64px;
+    line-height: 1.9;
+  }
+
+  /* Problem grid */
+  .problems {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1px;
+    background: var(--rule);
+    border: 1px solid var(--rule);
+    margin-bottom: 80px;
+  }
+
+  .problem-item {
+    background: var(--paper);
+    padding: 48px 36px;
+  }
+
+  .problem-num {
+    font-family: 'DM Serif Display', serif;
+    font-style: italic;
+    font-size: 56px;
+    color: var(--rule);
+    line-height: 1;
+    margin-bottom: 20px;
+  }
+
+  .problem-title {
+    font-family: 'Noto Serif TC', serif;
+    font-weight: 600;
+    font-size: 17px;
+    margin-bottom: 12px;
+    color: var(--ink);
+  }
+
+  .problem-desc {
+    font-size: 14px;
+    color: var(--muted);
+    line-height: 1.8;
+  }
+
+  .problem-resolution {
+    background: var(--ink);
+    color: var(--paper);
+    padding: 48px 64px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .problem-resolution::before {
+    content: 'AI Imprint';
+    position: absolute;
+    right: 48px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-family: 'DM Serif Display', serif;
+    font-style: italic;
+    font-size: 80px;
+    color: rgba(255,255,255,0.06);
+    white-space: nowrap;
+  }
+
+  .resolution-text {
+    font-family: 'Noto Serif TC', serif;
+    font-weight: 300;
+    font-size: 22px;
+    line-height: 1.7;
+    max-width: 680px;
+  }
+
+  .resolution-text strong {
+    font-weight: 600;
+    color: var(--accent-light);
+  }
+
+  /* ── WHAT YOU GET ── */
+  .alt-bg {
+    background: var(--warm);
+  }
+
+  .modules-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 0;
+    border: 1px solid var(--rule);
+    overflow: hidden;
+  }
+
+  .module-item {
+    padding: 36px 24px;
+    border-right: 1px solid var(--rule);
+    position: relative;
+    transition: background 0.2s;
+  }
+
+  .module-item:last-child { border-right: none; }
+  .module-item:hover { background: var(--paper); }
+
+  .module-num {
+    font-family: 'Space Mono', monospace;
+    font-size: 10px;
+    color: var(--accent);
+    letter-spacing: 0.15em;
+    margin-bottom: 20px;
+  }
+
+  .module-name {
+    font-family: 'Noto Serif TC', serif;
+    font-weight: 600;
+    font-size: 15px;
+    line-height: 1.5;
+    color: var(--ink);
+    margin-bottom: 12px;
+  }
+
+  .module-desc {
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.7;
+  }
+
+  /* ── HOW IT WORKS ── */
+  .steps {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 80px;
+    align-items: start;
+  }
+
+  .steps-left {
+    position: sticky;
+    top: 120px;
+  }
+
+  .steps-right {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+
+  .step-item {
+    display: grid;
+    grid-template-columns: 48px 1fr;
+    gap: 24px;
+    padding: 32px 0;
+    border-bottom: 1px solid var(--rule);
+  }
+
+  .step-item:last-child { border-bottom: none; }
+
+  .step-num {
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    color: var(--accent);
+    padding-top: 4px;
+  }
+
+  .step-title {
+    font-family: 'Noto Serif TC', serif;
+    font-weight: 600;
+    font-size: 16px;
+    margin-bottom: 8px;
+    color: var(--ink);
+  }
+
+  .step-desc {
+    font-size: 14px;
+    color: var(--muted);
+    line-height: 1.8;
+  }
+
+  /* ── NOT FOR YOU ── */
+  .clarity-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1px;
+    background: var(--rule);
+    border: 1px solid var(--rule);
+    overflow: hidden;
+  }
+
+  .clarity-col {
+    background: var(--paper);
+    padding: 48px 40px;
+  }
+
+  .clarity-col.dark {
+    background: var(--ink);
+    color: var(--paper);
+  }
+
+  .clarity-col-title {
+    font-family: 'Space Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.18em;
+    margin-bottom: 32px;
+    color: var(--muted);
+    text-transform: uppercase;
+  }
+
+  .clarity-col.dark .clarity-col-title {
+    color: rgba(255,255,255,0.4);
+  }
+
+  .clarity-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .clarity-list li {
+    font-size: 14px;
+    line-height: 1.7;
+    display: flex;
+    gap: 12px;
+  }
+
+  .clarity-list li::before {
+    content: '×';
+    color: #c0987a;
+    font-family: 'DM Serif Display', serif;
+    font-size: 16px;
+    flex-shrink: 0;
+    line-height: 1.5;
+  }
+
+  .clarity-col.dark .clarity-list li::before {
+    content: '✓';
+    color: var(--accent-light);
+  }
+
+  /* ── CTA ── */
+  .cta-section {
+    background: var(--ink);
+    color: var(--paper);
+    padding: 160px 80px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .cta-section::before {
+    content: '拓';
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    font-family: 'Noto Serif TC', serif;
+    font-weight: 900;
+    font-size: 500px;
+    color: rgba(255,255,255,0.025);
+    line-height: 1;
+    pointer-events: none;
+  }
+
+  .cta-eyebrow {
+    font-family: 'Space Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.22em;
+    color: var(--accent-light);
+    text-transform: uppercase;
+    margin-bottom: 32px;
+  }
+
+  .cta-title {
+    font-family: 'Noto Serif TC', serif;
+    font-weight: 900;
+    font-size: clamp(36px, 4vw, 60px);
+    line-height: 1.3;
+    margin-bottom: 24px;
+  }
+
+  .cta-subtitle {
+    font-size: 16px;
+    color: rgba(245,240,232,0.6);
+    max-width: 480px;
+    margin: 0 auto 56px;
+    line-height: 1.8;
+  }
+
+  .btn-cta-main {
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    padding: 20px 56px;
+    font-family: 'Noto Sans TC', sans-serif;
+    font-size: 15px;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    cursor: pointer;
+    transition: background 0.2s, transform 0.2s;
+    text-decoration: none;
+    display: inline-block;
+    position: relative;
+    z-index: 1;
+  }
+  .btn-cta-main:hover {
+    background: var(--accent-light);
+    transform: translateY(-2px);
+  }
+
+  .cta-note {
+    margin-top: 20px;
+    font-size: 12px;
+    color: rgba(245,240,232,0.35);
+    font-family: 'Space Mono', monospace;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* ── FOOTER ── */
+  footer {
+    padding: 40px 80px;
+    border-top: 1px solid var(--rule);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .footer-logo {
+    font-family: 'Noto Serif TC', serif;
+    font-weight: 900;
+    font-size: 16px;
+    letter-spacing: 0.06em;
+  }
+
+  .footer-copy {
+    font-family: 'Space Mono', monospace;
+    font-size: 10px;
+    color: var(--muted);
+    letter-spacing: 0.1em;
+  }
+
+  /* ── ANIMATIONS ── */
+  .fade-up {
+    opacity: 0;
+    transform: translateY(32px);
+    transition: opacity 0.7s ease, transform 0.7s ease;
+  }
+  .fade-up.visible {
+    opacity: 1;
+    transform: none;
+  }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 900px) {
+    nav { padding: 16px 24px; }
+    .hero { grid-template-columns: 1fr; }
+    .hero-left { padding: 120px 24px 60px; }
+    .hero-right { display: none; }
+    .section { padding: 80px 24px; }
+    .problems { grid-template-columns: 1fr; }
+    .modules-grid { grid-template-columns: 1fr 1fr; }
+    .module-item { border-right: none; border-bottom: 1px solid var(--rule); }
+    .steps { grid-template-columns: 1fr; }
+    .steps-left { position: static; }
+    .clarity-grid { grid-template-columns: 1fr; }
+    .cta-section { padding: 100px 24px; }
+    footer { padding: 32px 24px; flex-direction: column; gap: 16px; text-align: center; }
+  }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <a href="#" class="nav-logo">AI <span>拓</span>思</a>
+  <a href="#cta" class="nav-cta">立即加入</a>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-left">
+    <div class="hero-eyebrow">AI Writing Module · Lite Course</div>
+    <h1 class="hero-title">用 AI<br>拓印你<br>心裡的話</h1>
+    <div class="hero-title-en">AI Imprint</div>
+    <p class="hero-desc">
+      你腦袋裡的想法比你以為的<strong>更有價值</strong>。
+      這套工作流程讓你低阻力地把零碎想法，
+      轉成<strong>讓你自己滿意的內容</strong>——
+      你始終是思考的主體，AI 只是協助你把它表達出來。
+    </p>
+    <div class="hero-actions">
+      <a href="#cta" class="btn-primary">開始這門課</a>
+      <button class="btn-ghost" onclick="document.getElementById('how').scrollIntoView({behavior:'smooth'})">了解流程 →</button>
+    </div>
+  </div>
+
+  <div class="hero-right">
+    <div class="hero-card">
+      <div class="card-label">Raw Input → Draft</div>
+      <div class="card-input">
+        「我在 YouTube 看到有人叫大家立即開始 Vibe Coding。我覺得這是在販賣恐慌。因為多數人真正的障礙不是不會用工具，而是不能專注地把一個問題幹穿。」
+      </div>
+      <div class="card-arrow">↓</div>
+      <div class="card-output">
+        「那天我又看到一支影片，標題寫著『你不懂 Vibe Coding 就輸了』。我關掉影片，然後打開一個六個月前就開著、卻從來沒認真做完的專案…」
+      </div>
+    </div>
+    <div class="hero-deco-text">思</div>
+  </div>
+</section>
+
+<!-- PROBLEM -->
+<section class="section">
+  <div class="section-inner">
+    <div class="section-label fade-up">The Problem</div>
+    <h2 class="section-title fade-up">你不是沒有想法。<br>你是卡在「想法」到「文字」之間。</h2>
+    <p class="section-subtitle fade-up">
+      這中間有一道摩擦力，幾乎每個創作者都遇過。它不是才能問題，是流程問題。
+    </p>
+    <div class="problems fade-up">
+      <div class="problem-item">
+        <div class="problem-num">01</div>
+        <div class="problem-title">盯著空白螢幕</div>
+        <div class="problem-desc">腦袋裡有東西，但不知道從哪句話開始。開頭寫了三次，全部刪掉。</div>
+      </div>
+      <div class="problem-item">
+        <div class="problem-num">02</div>
+        <div class="problem-title">寫到一半就停住</div>
+        <div class="problem-desc">開始了，但越寫越覺得哪裡不對。最後進入無限刪除重來的迴圈。</div>
+      </div>
+      <div class="problem-item">
+        <div class="problem-num">03</div>
+        <div class="problem-title">寫完了卻不滿意</div>
+        <div class="problem-desc">終於寫完，讀一遍，覺得「這不是我想說的話」。然後沒有發出去。</div>
+      </div>
+    </div>
+    <div class="problem-resolution fade-up">
+      <p class="resolution-text">
+        AI 拓思不是讓 AI 替你寫作。它讓 AI 幫你把腦袋裡的想法<strong>先看得見</strong>，
+        讓你在一個有骨架的框架裡修改，而不是在空白裡從零建起。
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- MODULES -->
+<section class="section alt-bg">
+  <div class="section-inner">
+    <div class="section-label fade-up">What You'll Learn</div>
+    <h2 class="section-title fade-up">五個模組，<br>帶你從理解到上手。</h2>
+    <p class="section-subtitle fade-up">
+      不是操作手冊，是帶你真正理解這套方法、為什麼這樣設計、以及如何用在你自己的寫作上。
+    </p>
+    <div class="modules-grid fade-up">
+      <div class="module-item">
+        <div class="module-num">M — 00</div>
+        <div class="module-name">破題</div>
+        <div class="module-desc">你的寫作到底卡在哪？從根本開始重新理解這道摩擦力。</div>
+      </div>
+      <div class="module-item">
+        <div class="module-num">M — 01</div>
+        <div class="module-name">重新認知</div>
+        <div class="module-desc">你不需要訓練 AI 學你的風格，也不需要研究爆文公式。</div>
+      </div>
+      <div class="module-item">
+        <div class="module-num">M — 02</div>
+        <div class="module-name">核心方法</div>
+        <div class="module-desc">兩組 Prompt 的設計邏輯，TRLC 結構，以及如何給 AI 足夠的情境。</div>
+      </div>
+      <div class="module-item">
+        <div class="module-num">M — 03</div>
+        <div class="module-name">實戰示範</div>
+        <div class="module-desc">完整跑一遍：從零碎想法到 1,000 字草稿的 Before / After。</div>
+      </div>
+      <div class="module-item">
+        <div class="module-num">M — 04</div>
+        <div class="module-name">你的第一次</div>
+        <div class="module-desc">明確的練習任務 + 大綱與草稿的自我檢查清單 + 常見卡關解法。</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- HOW IT WORKS -->
+<section class="section" id="how">
+  <div class="section-inner">
+    <div class="steps">
+      <div class="steps-left fade-up">
+        <div class="section-label">How It Works</div>
+        <h2 class="section-title">整套流程，<br>不到半天。</h2>
+        <p style="color: var(--muted); font-size: 15px; line-height: 1.9; margin-top: 24px; max-width: 380px;">
+          你只需要一個 ChatGPT 或 Gemini 帳號，一個有點感受的想法，和大約半個工作日。
+          最後，你會拿到一篇讓你點頭說「對，這是我想說的話」的草稿。
+        </p>
+      </div>
+      <div class="steps-right">
+        <div class="step-item fade-up">
+          <div class="step-num">01</div>
+          <div>
+            <div class="step-title">輸入你的想法</div>
+            <div class="step-desc">把刺激你的事、你的反應、你的洞見寫下來。不需要完整，不需要優美，粗糙沒關係。</div>
+          </div>
+        </div>
+        <div class="step-item fade-up">
+          <div class="step-num">02</div>
+          <div>
+            <div class="step-title">選擇你的切入角度</div>
+            <div class="step-desc">AI 提出三個不同的視角，你選一個你真正想說的。這一步確保後面所有的內容都是你的觀點。</div>
+          </div>
+        </div>
+        <div class="step-item fade-up">
+          <div class="step-num">03</div>
+          <div>
+            <div class="step-title">在 Canvas 裡修改大綱</div>
+            <div class="step-desc">AI 生成四段式大綱（觸發 → 反思 → 洞見 → 收尾）。你把它改到 90 分滿意為止。這是整個流程最重要的一步。</div>
+          </div>
+        </div>
+        <div class="step-item fade-up">
+          <div class="step-num">04</div>
+          <div>
+            <div class="step-title">逐段產出草稿</div>
+            <div class="step-desc">AI 根據你修改過的大綱，逐段生成草稿。你確認一段後再產下一段，全程保持掌控。</div>
+          </div>
+        </div>
+        <div class="step-item fade-up">
+          <div class="step-num">05</div>
+          <div>
+            <div class="step-title">拿到你的第一版</div>
+            <div class="step-desc">約 1,000 字，TRLC 四段結構，用你的觀點說你的話。這是你修改用的原料，不是終稿——但它是你的。</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CLARITY -->
+<section class="section alt-bg">
+  <div class="section-inner">
+    <div class="section-label fade-up">Who This Is For</div>
+    <h2 class="section-title fade-up">說清楚，<br>這套課適合誰。</h2>
+    <div class="clarity-grid fade-up" style="margin-top: 48px;">
+      <div class="clarity-col">
+        <div class="clarity-col-title">不適合你，如果你是…</div>
+        <ul class="clarity-list">
+          <li>想要 AI 全自動生成內容、你完全不用動腦的人</li>
+          <li>主要目標是衝流量、追爆文公式的人</li>
+          <li>希望學到「複製貼上就能用」的萬能提詞模板</li>
+          <li>還不確定自己對什麼事情有觀點或感受的人</li>
+        </ul>
+      </div>
+      <div class="clarity-col dark">
+        <div class="clarity-col-title">很適合你，如果你是…</div>
+        <ul class="clarity-list">
+          <li>有想法、有感受，但每次要動筆就卡住的人</li>
+          <li>想寫出讓自己滿意的文章，而不是讓演算法滿意的文章</li>
+          <li>已經在用 AI 但覺得產出品質不穩定、不夠像自己的人</li>
+          <li>想建立一個可以重複使用的寫作工作流程的人</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="cta-section" id="cta">
+  <div class="cta-eyebrow">AI Imprint · Lite Course</div>
+  <h2 class="cta-title">你下一篇文章，<br>從今天開始。</h2>
+  <p class="cta-subtitle">
+    你的想法比你以為的更有價值。你只差一套好用的方法，
+    把它變成讓你自己點頭的內容。
+  </p>
+  <a href="#" class="btn-cta-main">立即加入 AI 拓思</a>
+  <p class="cta-note">LITE COURSE · 5 MODULES · 自己的步調，自己的進度</p>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-logo">AI <span style="color:var(--accent)">拓</span>思</div>
+  <div class="footer-copy">© 2025 AI IMPRINT · ALL RIGHTS RESERVED</div>
+</footer>
+
+<script>
+  // Fade-up on scroll
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        e.target.classList.add('visible');
+        observer.unobserve(e.target);
+      }
+    });
+  }, { threshold: 0.12 });
+
+  document.querySelectorAll('.fade-up').forEach(el => observer.observe(el));
+</script>
+</body>
+</html>
